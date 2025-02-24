@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>WireGuard & DNS Generator</title>
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css"
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+        :root {
+            --primary-color: #007bff;
+            --secondary-color: #0056b3;
+            --btn-copied: #28a745;
+            --light-bg: #f0f2f5;
+            --light-text: #1a1a1a;
+            --container-bg-light: #ffffff;
+            --dark-bg: #121212;
+            --dark-container-bg: #1e1e1e;
+            --dark-text: #e0e0e0;
+            --input-bg-dark: #333;
+            --border-dark: #555;
+            --toggle-color-light: #007bff;
+            --toggle-color-dark: #8f1dfa;
+            --transition-duration: 0.3s;
+        }
+
+        *,
+        *::before,
+        *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            background-color: var(--light-bg);
+            color: var(--light-text);
+            padding: 1.25rem;
+            min-height: 100vh;
+            transition: background-color var(--transition-duration), color var(--transition-duration);
+        }
+
+        .container {
+            max-width: 50rem;
+            margin: 2.5rem auto;
+            background: var(--container-bg-light);
+            padding: 2rem;
+            border-radius: 0.75rem;
+            box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.1);
+            position: relative;
+            transition: background-color var(--transition-duration);
+        }
+
+        /* Dark theme styles */
+        body.dark-theme {
+            background-color: var(--dark-bg);
+            color: var(--dark-text);
+        }
+
+        body.dark-theme .container {
+            background: var(--dark-container-bg);
+            box-shadow: none;
+        }
+
+        body.dark-theme input,
+        body.dark-theme select,
+        body.dark-theme pre {
+            background-color: var(--input-bg-dark);
+            color: var(--dark-text);
+            border: 1px solid var(--border-dark);
+        }
+
+        body.dark-theme .tab.active {
+            border-bottom-color: var(--toggle-color-dark);
+            color: var(--toggle-color-dark);
+        }
+
+        body.dark-theme .btn {
+            background-color: var(--toggle-color-dark);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 0.125rem solid #eee;
+        }
+
+        .tab {
+            padding: 1rem 2rem;
+            cursor: pointer;
+            border-bottom: 0.125rem solid transparent;
+            margin-bottom: -0.125rem;
+            font-weight: 500;
+            transition: color var(--transition-duration), border-bottom-color var(--transition-duration);
+        }
+
+        .tab.active {
+            border-bottom-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .section {
+            display: none;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 0.0625rem solid #eee;
+            opacity: 0;
+        }
+
+        .section.active {
+            display: block;
+            opacity: 1;
+        }
+
+        h1 {
+            color: var(--light-text);
+            margin-bottom: 1.5rem;
+            font-size: 1.8rem;
+        }
+
+        h2 {
+            color: #333;
+            margin-bottom: 1rem;
+            font-size: 1.4rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        label {
+            display: block;
+            font-weight: 500;
+            color: #444;
+            margin-bottom: 0.5rem;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 0.0625rem solid #ddd;
+            border-radius: 0.375rem;
+            font-size: 1rem;
+            margin-top: 0.25rem;
+        }
+
+        .output-container {
+            margin-top: 1rem;
+            position: relative;
+            display: none;
+        }
+
+        .output-container.visible {
+            display: block;
+        }
+
+        pre {
+            background-color: #f8f9fa;
+            padding: 1rem;
+            border-radius: 0.375rem;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-family: monospace;
+            margin-top: 0.5rem;
+            border: 0.0625rem solid #eee;
+        }
+
+        .button-group {
+            position: absolute;
+            top: 0.5rem;
+            right: 0.5rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        /* دکمه‌های عمومی */
+        .btn {
+            padding: 0.5rem 1rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 0.25rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: var(--secondary-color);
+        }
+
+        .btn.copied {
+            background-color: var(--btn-copied);
+        }
+
+        /* دکمه‌های اصلی */
+        .generate-btn {
+            background-color: var(--btn-copied);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 0.375rem;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            margin: 1rem 0;
+            width: 100%;
+        }
+
+        .generate-btn:hover {
+            background-color: #218838;
+        }
+
+        body.dark-theme .generate-btn {
+            background-color: #2ea043;
+        }
+
+        body.dark-theme .generate-btn:hover {
+            background-color: #238636;
+        }
+
+        /* آیکون‌ها: تنظیم اندازه و فاصله */
+        .btn i,
+        .generate-btn i {
+            font-size: 1.1em;
+            margin-right: 0.5em;
+            vertical-align: middle;
+        }
+
+        /* حذف فاصله اضافی در آیکون دکمه تغییر تم */
+        #toggleTheme i {
+            margin-right: 0;
+        }
+
+        /* دکمه تغییر تم */
+        #toggleTheme {
+            position: absolute;
+            top: 0.625rem;
+            right: 0.625rem;
+            background: transparent;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--toggle-color-light);
+            transition: color var(--transition-duration);
+            z-index: 1000;
+        }
+
+        body.dark-theme #toggleTheme {
+            color: var(--toggle-color-dark);
+        }
+
+        /* انیمیشن‌ها */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateX(0.625rem);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes fadeOut {
+            from {
+                opacity: 1;
+                transform: translateX(0);
+            }
+
+            to {
+                opacity: 0;
+                transform: translateX(-0.625rem);
+            }
+        }
+
+        .fade-in {
+            animation: fadeIn var(--transition-duration) forwards;
+        }
+
+        .fade-out {
+            animation: fadeOut var(--transition-duration) forwards;
+        }
+
+        @media (max-width: 48rem) {
+            .container {
+                padding: 1rem;
+            }
+
+            .button-group {
+                position: static;
+                margin-top: 1rem;
+            }
+
+            .name-group {
+                display: flex;
+                gap: 0.625rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- دکمه تغییر تم -->
+        <button id="toggleTheme"><i class="fas fa-moon"></i></button>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="wireguard">WireGuard Config</div>
+            <div class="tab" data-tab="dns">DNS Generator</div>
+        </div>
+
+        <div id="wireguardSection" class="section active">
+            <h2>WireGuard Configuration</h2>
+            <div class="form-group">
+                <label for="configName">Configuration Name</label>
+                <div class="name-group">
+                    <input type="text" id="configName" placeholder="Enter a name for this configuration" />
+                    <button id="generateNameBtn" class="btn">
+                        <i class="fas fa-sync-alt"></i>Generate Random Name
+                    </button>
+                </div>
+                <button id="generateNewConfig" class="generate-btn">
+                    <i class="fas fa-sync-alt"></i> Generate New Configuration
+                </button>
+            </div>
+
+            <div class="form-group">
+                <label for="location">Select Location</label>
+                <select id="location">
+                    <option value="">Choose a location</option>
+                    <option value="germany">Germany</option>
+                    <option value="tr">Turkey</option>
+                    <option value="uae">UAE</option>
+                    <option value="usa">USA</option>
+                    <option value="Russia">Russia</option>
+                </select>
+            </div>
+
+            <div class="output-container" id="wgConfigContainer">
+                <label>WireGuard Configuration</label>
+                <div class="button-group">
+                    <button class="btn" id="copyWgBtn">Copy</button>
+                    <button class="btn" id="downloadWgBtn">Download</button>
+                </div>
+                <pre id="wgConfigOutput"></pre>
+            </div>
+        </div>
+
+        <div id="dnsSection" class="section">
+            <h2>DNS Generator</h2>
+            <div class="form-group">
+                <label for="dnsLocation">Select Location</label>
+                <select id="dnsLocation">
+                    <option value="">Choose a location</option>
+                    <option value="germany">Germany</option>
+                    <option value="tr">Turkey</option>
+                    <option value="uae">UAE</option>
+                    <option value="usa">USA</option>
+                    <option value="Russia">Russia</option>
+                </select>
+            </div>
+
+            <div class="output-container" id="dnsConfigContainer">
+                <label>DNS Addresses</label>
+                <div class="button-group">
+                    <button id="generateNewDns" class="generate-btn">
+                        <i class="fas fa-sync-alt"></i> Generate New DNS
+                    </button>
+                    <button class="btn" id="copyDnsBtn">Copy</button>
+                    <button class="btn" id="downloadDnsBtn">Download</button>
+                </div>
+                <pre id="dnsConfigOutput"></pre>
+            </div>
+        </div>
+    </div>
+
+    <!-- tweetnacl library for key generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tweetnacl/1.0.3/nacl.min.js"></script>
+    <script>
+        /* Location data and helper functions remain unchanged */
+        const locations = {
+            germany: {
+                ipv6_prefix: "2a02:2ae8",
+                ipv4_ranges: [
+                    "84.128.0.0/10", "87.128.0.0/10", "91.0.0.0/10", "79.192.0.0/10",
+                    "93.192.0.0/10", "217.224.0.0/11", "80.128.0.0/11", "91.32.0.0/11",
+                    "93.192.0.0/11", "217.80.0.0/12"
+                ]
+            },
+            tr: {
+                ipv6_prefix: "2a02:2ae8",
+                ipv4_ranges: [
+                    "78.161.221.0/24", "78.163.24.0/24", "78.163.96.0/21", "78.163.105.0/24",
+                    "78.163.112.0/20", "78.163.128.0/22", "78.163.156.0/23", "78.163.164.0/22",
+                    "78.164.209.0/24", "78.165.64.0/20", "78.165.80.0/21", "78.165.88.0/24",
+                    "78.165.92.0/22", "78.165.96.0/19", "78.165.192.0/20", "78.165.208.0/24",
+                    "78.165.211.0/24", "78.165.212.0/23", "78.165.215.0/24", "78.165.216.0/24"
+                ]
+            },
+            uae: {
+                ipv6_prefix: "2a02:2ae8",
+                ipv4_ranges: [
+                    "184.25.205.0/24", "5.30.0.0/15", "5.32.0.0/17", "23.194.192.0/22",
+                    "46.19.77.0/24", "46.19.78.0/23", "80.227.0.0/16", "87.200.0.0/15",
+                    "91.72.0.0/14", "94.200.0.0/14", "94.204.0.0/15", "94.206.0.0/16",
+                    "94.207.0.0/19", "94.207.48.0/20", "94.207.64.0/18", "94.207.128.0/17",
+                    "104.109.251.0/24", "149.24.230.0/23", "160.83.52.0/23", "213.132.32.0/19"
+                ]
+            },
+            usa: {
+                ipv6_prefix: "2608:120",
+                ipv4_ranges: [
+                    "20.192.0.0/10", "52.224.0.0/11", "20.0.0.0/11", "4.128.0.0/12", "4.144.0.0/12",
+                    "4.160.0.0/12", "4.176.0.0/12", "4.192.0.0/12", "4.208.0.0/12", "4.224.0.0/12",
+                    "4.240.0.0/12", "20.160.0.0/12", "104.40.0.0/13", "104.208.0.0/13",
+                    "40.64.0.0/13", "23.96.0.0/13", "214.30.0.0/15",
+                    "55.0.0.0/16",
+                    "131.73.128.0/17",
+                    "215.72.128.0/17",
+                    "55.189.192.0/18",
+                    "205.76.192.0/18",
+                    "205.103.192.0/18",
+                    "214.57.64.0/18",
+                    "205.100.96.0/19",
+                    "205.103.128.0/19",
+                    "160.140.192.0/19",
+                    "205.84.64.0/18",
+                    "205.60.64.0/19",
+                    "205.72.32.0/19",
+                    "143.74.0.0/19",
+                    "205.65.80.0/20",
+                    "144.105.80.0/20",
+                    "205.105.192.0/20",
+                    "205.90.208.0/20",
+                    "205.91.208.0/20",
+                    "158.11.32.0/19",
+                    "139.241.160.0/19",
+                    "205.56.240.0/22",
+                    "205.107.224.0/22",
+                    "205.86.152.0/21",
+                    "205.103.96.0/20",
+                    "205.108.80.0/20",
+                    "205.84.48.0/20",
+                    "205.107.32.0/20",
+                    "205.60.240.0/20",
+                    "205.108.184.0/21",
+                    "198.218.80.0/21",
+                    "143.76.128.0/21",
+                    "198.220.168.0/21",
+                    "205.78.112.0/20",
+                    "205.78.104.0/21",
+                    "205.76.160.0/19",
+                    "205.91.200.0/21",
+                    "205.60.96.0/22",
+                    "205.88.128.0/19"
+                ]
+            },
+            Russia: {
+                ipv6_prefix: "2a00:1e88",
+                ipv4_ranges: [
+                    "2.60.0.0/15", "2.62.0.0/16", "5.136.0.0/15", "5.138.0.0/16",
+                    "31.162.0.0/15", "31.180.0.0/15", "37.20.0.0/14", "37.78.0.0/15",
+                    "46.158.0.0/15", "78.36.0.0/15", "78.85.0.0/16", "185.27.148.0/22",
+                    "185.140.148.0/22", "185.169.100.0/22", "185.199.4.0/22", "185.205.128.0/22",
+                    "185.226.128.0/22", "188.16.0.0/16", "188.17.0.0/18", "188.17.64.0/19",
+                    "188.17.96.0/20", "188.17.120.0/21", "188.17.128.0/18", "188.17.192.0/19",
+                    "188.18.0.0/18", "188.18.64.0/19", "188.18.96.0/20", "188.18.120.0/21",
+                    "188.18.128.0/17", "188.19.0.0/16", "188.113.0.0/18", "188.114.0.0/18",
+                    "188.128.0.0/17", "188.133.192.0/18", "188.254.0.0/17", "195.19.96.0/20",
+                    "195.38.32.0/19", "195.46.96.0/19", "195.162.32.0/19", "212.20.0.0/18",
+                    "212.32.192.0/19", "212.34.96.0/19", "212.35.160.0/19", "212.48.192.0/19",
+                    "212.55.96.0/19", "212.57.128.0/18", "212.96.192.0/19", "212.106.32.0/19",
+                    "212.120.160.0/19", "212.124.0.0/20", "212.164.0.0/16", "212.220.0.0/17",
+                    "212.220.128.0/18", "212.220.192.0/20", "212.220.224.0/19", "213.24.112.0/20",
+                    "213.59.192.0/18", "213.129.32.0/19", "213.135.96.0/19", "213.155.200.0/21",
+                    "213.155.208.0/20", "213.158.0.0/20", "213.167.192.0/19", "213.177.96.0/19",
+                    "213.228.64.0/19", "213.228.96.0/20", "213.242.0.0/18", "217.20.80.0/20",
+                    "217.23.16.0/20", "217.65.80.0/20", "217.70.96.0/19", "217.107.64.0/19",
+                    "217.107.112.0/20", "217.107.128.0/18", "217.107.224.0/19", "217.116.128.0/19"
+                ]
+            }
+        };
+
+        function arrayBufferToBase64(buffer) {
+            let binary = '';
+            let bytes = new Uint8Array(buffer);
+            for (let i = 0; i < bytes.byteLength; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            return btoa(binary);
+        }
+
+        function generateKeyPair() {
+            const keyPair = nacl.box.keyPair();
+            return {
+                privateKey: arrayBufferToBase64(keyPair.secretKey),
+                publicKey: arrayBufferToBase64(keyPair.publicKey)
+            };
+        }
+
+        function randomIPv4FromCIDR(cidr) {
+            const [base, prefix] = cidr.split("/");
+            const prefixNum = parseInt(prefix, 10);
+            const parts = base.split(".").map(Number);
+            const ipNum = (((parts[0] << 24) >>> 0) | ((parts[1] << 16) >>> 0) | ((parts[2] << 8) >>> 0) | (parts[3] >>> 0)) >>> 0;
+            const hostBits = 32 - prefixNum;
+            const networkNum = ipNum & (~0 << hostBits);
+            const maxHosts = Math.pow(2, hostBits);
+            const randomOffset = Math.floor(Math.random() * maxHosts);
+            const randomIPNum = networkNum + randomOffset;
+            const a = (randomIPNum >>> 24) & 0xff;
+            const b = (randomIPNum >>> 16) & 0xff;
+            const c = (randomIPNum >>> 8) & 0xff;
+            const d = randomIPNum & 0xff;
+            return `${a}.${b}.${c}.${d}`;
+        }
+
+        function generateIPv6DNSAddresses(prefix) {
+            const segment1 = Math.random().toString(16).substring(2, 6).padEnd(4, '0');
+            const segment2 = Math.random().toString(16).substring(2, 6).padEnd(4, '0');
+            return [
+                `${prefix}:${segment1}:${segment2}::1`,
+                `${prefix}:${segment1}:${segment2}::0`
+            ];
+        }
+
+        function generateIPv4DNSAddresses(locationData) {
+            const filteredRanges = locationData.ipv4_ranges.filter(range => !range.includes("/10"));
+            if (filteredRanges.length === 0) return ["", ""];
+            const range1 = filteredRanges[Math.floor(Math.random() * filteredRanges.length)];
+            const range2 = filteredRanges[Math.floor(Math.random() * filteredRanges.length)];
+            const ip1 = randomIPv4FromCIDR(range1);
+            const ip2 = randomIPv4FromCIDR(range2);
+            return [ip1, ip2];
+        }
+
+        function generateWgConfig(location, configName) {
+            const locationData = locations[location];
+            const availableIPs = locationData.ipv4_ranges.filter(range => !range.includes("/10"));
+            if (availableIPs.length < 2) return "Not enough IP ranges available.";
+            const randomIndex1 = Math.floor(Math.random() * availableIPs.length);
+            const ip1 = randomIPv4FromCIDR(availableIPs[randomIndex1]);
+            availableIPs.splice(randomIndex1, 1);
+            const randomIndex2 = Math.floor(Math.random() * availableIPs.length);
+            const ip2 = randomIPv4FromCIDR(availableIPs[randomIndex2]);
+
+            const clientKeyPair = generateKeyPair();
+            const serverKeyPair = generateKeyPair();
+
+            const dnsIPv4 = generateIPv4DNSAddresses(locationData);
+
+            return `[Interface]
+PrivateKey = ${clientKeyPair.privateKey}
+Address = 10.202.10.10/32, ${ip1}/16, ${ip2}/32
+ListenPort = 51820
+DNS = 78.157.42.100, ${dnsIPv4[0]}, ${dnsIPv4[1]}
+MTU = 1400
+
+[Peer]
+PublicKey = ${serverKeyPair.publicKey}
+Endpoint = ${ip1}:443
+AllowedIPs = 0.0.0.0/8, ::/8
+PersistentKeepalive = 20`;
+        }
+
+        function generateDnsConfig(location) {
+            const locationData = locations[location];
+            const dnsIPv4Addresses = generateIPv4DNSAddresses(locationData);
+            const dnsIPv6Addresses = generateIPv6DNSAddresses(locationData.ipv6_prefix);
+            return `DNS Addresses for ${location.toUpperCase()}:
+
+IPv4 DNS:
+Primary DNS: ${dnsIPv4Addresses[0]}
+Secondary DNS: ${dnsIPv4Addresses[1]}
+
+IPv6 DNS:
+Primary DNS: ${dnsIPv6Addresses[0]}
+Secondary DNS: ${dnsIPv6Addresses[1]}`;
+        }
+
+        function downloadFile(content, filename) {
+            const blob = new Blob([content], { type: "text/plain" });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+        }
+
+        document.querySelectorAll(".tab").forEach(tab => {
+            tab.addEventListener("click", () => {
+                const currentTab = document.querySelector(".tab.active");
+                const currentSection = document.querySelector(".section.active");
+                const targetSection = document.getElementById(`${tab.dataset.tab}Section`);
+
+                if (currentTab === tab) return;
+
+                currentTab.classList.remove("active");
+                tab.classList.add("active");
+
+                currentSection.classList.add("fade-out");
+                setTimeout(() => {
+                    currentSection.classList.remove("active", "fade-out");
+                    targetSection.classList.add("active", "fade-in");
+                    setTimeout(() => {
+                        targetSection.classList.remove("fade-in");
+                    }, 300);
+                }, 300);
+            });
+        });
+
+        document.getElementById("location").addEventListener("change", () => {
+            const location = document.getElementById("location").value;
+            const configName = document.getElementById("configName").value;
+            if (location) {
+                const wgConfig = generateWgConfig(location, configName);
+                document.getElementById("wgConfigOutput").textContent = wgConfig;
+                document.getElementById("wgConfigContainer").classList.add("visible");
+            } else {
+                document.getElementById("wgConfigContainer").classList.remove("visible");
+            }
+        });
+
+        document.getElementById("configName").addEventListener("input", () => {
+            const location = document.getElementById("location").value;
+            if (location) {
+                const configName = document.getElementById("configName").value;
+                const wgConfig = generateWgConfig(location, configName);
+                document.getElementById("wgConfigOutput").textContent = wgConfig;
+            }
+        });
+
+        document.getElementById("generateNameBtn").addEventListener("click", () => {
+            const randomName = generateRandomWGName();
+            document.getElementById("configName").value = randomName;
+            const location = document.getElementById("location").value;
+            if (location) {
+                const wgConfig = generateWgConfig(location, randomName);
+                document.getElementById("wgConfigOutput").textContent = wgConfig;
+            }
+        });
+
+        function generateRandomWGName() {
+            const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let result = '';
+            for (let i = 0; i < 7; i++) {
+                result += characters.charAt(Math.floor(Math.random() * characters.length));
+            }
+            return `WG-${result}☢️`;
+        }
+
+        function updateDnsConfig() {
+            const location = document.getElementById("dnsLocation").value;
+            if (location) {
+                const dnsConfig = generateDnsConfig(location);
+                document.getElementById("dnsConfigOutput").textContent = dnsConfig;
+                document.getElementById("dnsConfigContainer").classList.add("visible");
+            } else {
+                document.getElementById("dnsConfigContainer").classList.remove("visible");
+            }
+        }
+        document.getElementById("dnsLocation").addEventListener("change", updateDnsConfig);
+
+        document.getElementById("copyWgBtn").addEventListener("click", async () => {
+            const config = document.getElementById("wgConfigOutput").textContent;
+            await navigator.clipboard.writeText(config);
+            const btn = document.getElementById("copyWgBtn");
+            btn.textContent = "Copied!";
+            btn.classList.add("copied");
+            setTimeout(() => {
+                btn.textContent = "Copy";
+                btn.classList.remove("copied");
+            }, 2000);
+        });
+
+        document.getElementById("copyDnsBtn").addEventListener("click", async () => {
+            const config = document.getElementById("dnsConfigOutput").textContent;
+            await navigator.clipboard.writeText(config);
+            const btn = document.getElementById("copyDnsBtn");
+            btn.textContent = "Copied!";
+            btn.classList.add("copied");
+            setTimeout(() => {
+                btn.textContent = "Copy";
+                btn.classList.remove("copied");
+            }, 2000);
+        });
+
+        document.getElementById("downloadWgBtn").addEventListener("click", () => {
+            const location = document.getElementById("location").value;
+            const configName = document.getElementById("configName").value || `wireguard-${location}`;
+            const config = document.getElementById("wgConfigOutput").textContent;
+            downloadFile(config, configName + ".conf");
+        });
+
+        document.getElementById("downloadDnsBtn").addEventListener("click", () => {
+            const location = document.getElementById("dnsLocation").value;
+            const config = document.getElementById("dnsConfigOutput").textContent;
+            downloadFile(config, `dns-${location}.txt`);
+        });
+
+        const toggleBtn = document.getElementById("toggleTheme");
+        toggleBtn.addEventListener("click", () => {
+            document.body.classList.toggle("dark-theme");
+            const icon = toggleBtn.querySelector("i");
+            if (document.body.classList.contains("dark-theme")) {
+                icon.classList.replace("fa-moon", "fa-sun");
+            } else {
+                icon.classList.replace("fa-sun", "fa-moon");
+            }
+        });
+
+        document.getElementById("generateNewConfig").addEventListener("click", () => {
+            const location = document.getElementById("location").value;
+            const configName = document.getElementById("configName").value;
+            if (location) {
+                const wgConfig = generateWgConfig(location, configName);
+                document.getElementById("wgConfigOutput").textContent = wgConfig;
+                document.getElementById("wgConfigContainer").classList.add("visible");
+            }
+        });
+
+        document.getElementById("generateNewDns").addEventListener("click", () => {
+            const location = document.getElementById("dnsLocation").value;
+            if (location) {
+                const dnsConfig = generateDnsConfig(location);
+                document.getElementById("dnsConfigOutput").textContent = dnsConfig;
+                document.getElementById("dnsConfigContainer").classList.add("visible");
+            }
+        });
+    </script>
+</body>
+
+</html>
